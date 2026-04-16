@@ -82,6 +82,32 @@
         .screen-title { font-size: 17px; font-weight: 700; color: white; }
         .screen-content { flex: 1; padding: 14px; overflow-y: auto; }
         
+        /* ИНДИКАТОР КАЛИБРОВКИ */
+        .calibration-indicator {
+            padding: 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+        .calibration-indicator.red {
+            background: rgba(198, 40, 40, 0.2);
+            color: #ff8888;
+            border: 1px solid #c62828;
+        }
+        .calibration-indicator.green {
+            background: rgba(46, 125, 50, 0.2);
+            color: #6b9c7a;
+            border: 1px solid #2e7d32;
+        }
+        .calibration-indicator.yellow {
+            background: rgba(255, 160, 0, 0.2);
+            color: #ffb74d;
+            border: 1px solid #ff9800;
+        }
+        
         .diagnostic-fullscreen {
             position: fixed !important;
             top: 0 !important;
@@ -353,6 +379,7 @@
                         <div class="checklist-item">🔘 Двери закрыты, в машине никого нет</div>
                         <div class="checklist-item">🔘 Музыка и кондиционер выключены</div>
                         <div class="checklist-item">🔘 Телефон не на зарядке</div>
+                        <div class="checklist-item">🔘 Телефон лежит ровно (индикатор зелёный)</div>
                     </div>
                 </div>
                 <div class="instruction-card">
@@ -394,6 +421,11 @@
                 <div class="temp-row">
                     <span id="tempIcon">🌡️</span>
                     <span id="tempValue">--°C</span>
+                </div>
+                
+                <!-- ИНДИКАТОР КАЛИБРОВКИ (НАКЛОН ТЕЛЕФОНА) -->
+                <div id="calibrationIndicator" class="calibration-indicator yellow">
+                    🔄 Ожидание данных с датчика...
                 </div>
                 
                 <div id="sensorStatusDiag" class="sensor-status not-working">
@@ -599,7 +631,59 @@
         playSound('soundSaveSuccess');
     }
     
-    // ========== КАЛИБРОВКА ==========
+    // ========== КАЛИБРОВКА (НАКЛОН ТЕЛЕФОНА) ==========
+    function updateCalibrationIndicator(event) {
+        const indicator = document.getElementById('calibrationIndicator');
+        if (!indicator) return;
+        
+        let beta = event.beta;   // наклон вперёд/назад (-180…180)
+        let gamma = event.gamma; // наклон влево/вправо (-90…90)
+        
+        if (beta === null || gamma === null) {
+            indicator.className = 'calibration-indicator yellow';
+            indicator.innerHTML = '⚠️ Нет данных о наклоне. Проверьте датчик.';
+            return;
+        }
+        
+        const threshold = 8; // допустимое отклонение в градусах
+        
+        if (Math.abs(beta) < threshold && Math.abs(gamma) < threshold) {
+            indicator.className = 'calibration-indicator green';
+            indicator.innerHTML = '✅ Телефон лежит ровно — можно начинать';
+        } else {
+            indicator.className = 'calibration-indicator red';
+            let hint = '';
+            if (Math.abs(beta) >= threshold) hint += ' наклон вперёд/назад ';
+            if (Math.abs(gamma) >= threshold) hint += ' наклон влево/вправо ';
+            indicator.innerHTML = `⚠️ Положите телефон горизонтально!${hint}`;
+        }
+    }
+    
+    function initCalibrationCheck() {
+        if (typeof DeviceOrientationEvent !== 'undefined' && 
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // iOS: запрос разрешения будет при нажатии кнопки
+            return;
+        } else {
+            window.addEventListener('deviceorientation', updateCalibrationIndicator);
+        }
+    }
+    
+    function requestOrientationPermission() {
+        if (typeof DeviceOrientationEvent !== 'undefined' && 
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission()
+                .then(response => {
+                    if (response === 'granted') {
+                        window.addEventListener('deviceorientation', updateCalibrationIndicator);
+                        showModal('✅', 'ДОСТУП РАЗРЕШЁН', 'Калибровка наклона активна.');
+                    }
+                })
+                .catch(err => console.log('Orientation permission error:', err));
+        }
+    }
+    
+    // ========== КАЛИБРОВКА ФОНОВОГО ШУМА ==========
     function calibrateSensor() {
         showModal('🎯', 'КАЛИБРОВКА', 'Положите телефон на ровную поверхность (стол) и нажмите "ОК". За 2 секунды измерим фоновый шум.');
         setTimeout(() => {
@@ -693,6 +777,9 @@
     
     function requestPermissionsAndCheck() {
         if (!checkSensorSupport()) return;
+        
+        // Также запрашиваем разрешение для ориентации (калибровка наклона)
+        requestOrientationPermission();
         
         if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
             showModal('📱', 'РАЗРЕШЕНИЕ ДЛЯ IPHONE', 'Нажмите «Разрешить доступ», чтобы приложение могло считывать вибрацию двигателя.');
@@ -1042,6 +1129,7 @@
             const r = JSON.parse(ref);
             drawComparison(r, r);
         }
+        initCalibrationCheck();
         requestPermissionsAndCheck();
     });
     
