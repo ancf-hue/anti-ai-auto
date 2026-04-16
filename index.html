@@ -33,19 +33,10 @@
             z-index: 200;
             transition: opacity 0.5s ease;
         }
-        .loading-screen.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-        .loading-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        .loading-screen.hidden { opacity: 0; pointer-events: none; }
+        .loading-video { width: 100%; height: 100%; object-fit: cover; }
         .sound-toggle {
-            position: absolute;
-            top: 20px;
-            left: 20px;
+            position: absolute; top: 20px; left: 20px;
             background: rgba(0,0,0,0.5);
             border: 2px solid rgba(255,255,255,0.5);
             border-radius: 50%;
@@ -158,9 +149,27 @@
             z-index: 10 !important;
         }
         
+        .progress-bar-container {
+            width: 80%;
+            height: 8px;
+            background: #333;
+            border-radius: 10px;
+            margin: 20px auto;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: #2e7d32;
+            transition: width 0.1s linear;
+            border-radius: 10px;
+        }
+        
         .instruction-card { background: rgba(25,35,45,0.85); border-radius: 18px; padding: 14px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); }
         .instruction-card h3 { font-size: 14px; color: #6ba5d9; margin-bottom: 8px; }
         .instruction-card p { font-size: 12px; color: #9ab3c5; line-height: 1.5; }
+        .checklist { background: rgba(0,0,0,0.3); border-radius: 16px; padding: 12px; margin-top: 8px; }
+        .checklist-item { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 11px; color: #ccc; }
         
         .support-card {
             background: linear-gradient(135deg, #0d2b3e, #0a1a24);
@@ -245,6 +254,7 @@
         .btn-save { background: #1565c0; color: white; }
         .btn-compare { background: #2e7d32; color: white; }
         .btn-reset { background: #444; color: #ddd; }
+        .btn-calibrate { background: #ff8f00; color: white; }
         
         .sensor-status {
             background: #1a1f2e;
@@ -272,6 +282,14 @@
         .data-title { font-size: 12px; color: #6ba5d9; margin-bottom: 6px; font-weight: 700; }
         .data-date { font-size: 10px; color: #9ab3c5; }
         .heart { color: #ff4444; }
+        .disclaimer {
+            font-size: 9px;
+            color: #555;
+            text-align: center;
+            margin-top: 16px;
+            padding: 8px;
+            border-top: 1px solid #2a2a2a;
+        }
     </style>
 </head>
 <body>
@@ -318,6 +336,9 @@
             </div>
             
             <footer>🛡️ НИКАКИХ ДАННЫХ НЕ СОБИРАЕМ · РАБОТАЕТ ОФЛАЙН</footer>
+            <div class="disclaimer">
+                ⚠️ Приложение — вспомогательный инструмент. Не заменяет профессиональную диагностику.
+            </div>
         </div>
 
         <!-- ИНСТРУКЦИЯ -->
@@ -325,12 +346,23 @@
             <div class="screen-header"><button class="screen-back" onclick="showScreen('main')">←</button><div class="screen-title">📖 ИНСТРУКЦИЯ</div></div>
             <div class="screen-content scrollable">
                 <div class="instruction-card">
+                    <h3>✅ ЧЕК-ЛИСТ ПЕРЕД ДИАГНОСТИКОЙ</h3>
+                    <div class="checklist">
+                        <div class="checklist-item">🔘 Двигатель прогрет до рабочей температуры</div>
+                        <div class="checklist-item">🔘 Телефон закреплён на приборной панели (одно место)</div>
+                        <div class="checklist-item">🔘 Двери закрыты, в машине никого нет</div>
+                        <div class="checklist-item">🔘 Музыка и кондиционер выключены</div>
+                        <div class="checklist-item">🔘 Телефон не на зарядке</div>
+                    </div>
+                </div>
+                <div class="instruction-card">
                     <h3>🔍 ПРОВЕРКА ДАТЧИКА</h3>
                     <p>Перед диагностикой нажмите кнопку «ПРОВЕРИТЬ ДАТЧИК».<br><br>
                     <strong>Как понять, что датчик работает?</strong><br>
                     ✅ Появится зелёный значок<br>
                     ✅ Будут видны числовые значения<br>
-                    ✅ Статус: «ГОТОВ К ДИАГНОСТИКЕ»</p>
+                    ✅ Статус: «ГОТОВ К ДИАГНОСТИКЕ»<br><br>
+                    <strong>На iPhone:</strong> при первом нажатии появится запрос «Разрешить доступ к движению». Нажмите «Разрешить».</p>
                 </div>
                 <div class="instruction-card">
                     <h3>📥 ЭТАП 1. СОХРАНЕНИЕ ЭТАЛОНА</h3>
@@ -341,8 +373,16 @@
                     <p>1. Заведите двигатель.<br>2. Положите телефон на ТО ЖЕ САМОЕ МЕСТО на приборной панели.<br>3. Нажмите кнопку «СРАВНИТЬ».<br>4. Выйдите из автомобиля.<br>5. Через 30 секунд увидите результат.</p>
                 </div>
                 <div class="instruction-card">
-                    <h3>🔍 РАСШИФРОВКА</h3>
-                    <p>🟢 0-10% → ДВИГАТЕЛЬ РАБОТАЕТ ТАК ЖЕ<br>🟡 10-25% → ЕСТЬ НЕБОЛЬШИЕ ИЗМЕНЕНИЯ<br>🔴 25%+ → ДВИГАТЕЛЬ РАБОТАЕТ ХУЖЕ</p>
+                    <h3>🔍 РАСШИФРОВКА РЕЗУЛЬТАТА</h3>
+                    <p>🟢 0-10% → ВСЁ ХОРОШО, ДВИГАТЕЛЬ СТАБИЛЕН<br>🟡 10-25% → ЕСТЬ НЕБОЛЬШИЕ ИЗМЕНЕНИЯ, НАБЛЮДАЙТЕ<br>🔴 25%+ → ДВИГАТЕЛЬ РАБОТАЕТ ХУЖЕ, ОБРАТИТЕСЬ К МЕХАНИКУ</p>
+                </div>
+                <div class="instruction-card">
+                    <h3>🌡️ ТЕРМОМЕТР</h3>
+                    <p>🟢 Зелёный — температура как при эталоне<br>🟡 Жёлтый — есть разница<br>🔴 Красный — результат может быть неточным</p>
+                </div>
+                <div class="instruction-card">
+                    <h3>🎯 О ПРОЕКТЕ</h3>
+                    <p>В отличие от ИИ-диагностики, которая ищет сходства в облаке данных, Anti-AI Auto работает на законах механики. Мы сравниваем вибрационный рисунок вашего двигателя с вашим же эталоном. Изменение вибрации — это физический факт износа, который нельзя подделать или «галлюцинировать».</p>
                 </div>
             </div>
         </div>
@@ -369,7 +409,8 @@
                 <canvas id="vibrationChart" width="400" height="160"></canvas>
                 
                 <button id="saveRefBtn" class="diag-btn btn-save" disabled>📥 СОХРАНИТЬ ЭТАЛОН</button>
-                <button id="compareBtn" class="diag-btn btn-compare" disabled>📊 СРАВНИТЬ С ЭТАЛОНОМ</button>
+                <button id="compareBtn" class="diag-btn btn-compare" disabled>📊 СРАВНИТЬ</button>
+                <button id="calibrateBtn" class="diag-btn btn-calibrate" onclick="calibrateSensor()" style="display:none;">🎯 КАЛИБРОВКА</button>
                 <button id="resetRefBtn" class="diag-btn btn-reset" onclick="resetReference()" style="display:none;">🗑 СБРОСИТЬ ЭТАЛОН</button>
                 
                 <div id="resultBlock" style="display:none;"></div>
@@ -417,6 +458,9 @@
     <!-- ЭКРАН С ШАРАМИ -->
     <div id="diagnosticFullscreen" class="diagnostic-fullscreen hidden">
         <div class="diagnostic-instruction" id="diagnosticInstruction">🚗 Двигатель работает...<br>Не трогайте телефон</div>
+        <div class="progress-bar-container" id="progressContainer" style="display:none;">
+            <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
         <div class="big-ball" id="bigBall"></div>
         <div class="big-timer" id="bigTimer">30</div>
     </div>
@@ -448,6 +492,7 @@
 <script>
     // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
     let audioContext = null;
+    let calibrationOffset = 0;
     
     // ========== ЗАСТАВКА: 2 секунды видео + 3 секунды = 5 секунд ==========
     const loadingScreen = document.getElementById('loadingScreen');
@@ -554,6 +599,35 @@
         playSound('soundSaveSuccess');
     }
     
+    // ========== КАЛИБРОВКА ==========
+    function calibrateSensor() {
+        showModal('🎯', 'КАЛИБРОВКА', 'Положите телефон на ровную поверхность (стол) и нажмите "ОК". За 2 секунды измерим фоновый шум.');
+        setTimeout(() => {
+            let testData = [];
+            function calMotion(e) { let z = e.acceleration.z; if (z === undefined || z === null) z = 0; testData.push(Math.abs(z)); }
+            window.addEventListener('devicemotion', calMotion);
+            setTimeout(() => {
+                window.removeEventListener('devicemotion', calMotion);
+                if (testData.length > 0) {
+                    calibrationOffset = testData.reduce((a,b)=>a+b,0) / testData.length;
+                    showModal('✅', 'КАЛИБРОВКА ГОТОВА', `Фоновый шум скомпенсирован (${calibrationOffset.toFixed(3)}).`);
+                } else {
+                    calibrationOffset = 0;
+                    showModal('⚠️', 'НЕТ ДАННЫХ', 'Калибровка не удалась. Используем стандартные настройки.');
+                }
+            }, 2000);
+        }, 500);
+    }
+    
+    // ========== ПРОВЕРКА ПОДДЕРЖКИ ДАТЧИКА ==========
+    function checkSensorSupport() {
+        if (!window.DeviceMotionEvent) {
+            showModal('❌', 'НЕ ПОДДЕРЖИВАЕТСЯ', 'Ваш браузер не поддерживает акселерометр. Используйте Chrome или Safari на современном телефоне.');
+            return false;
+        }
+        return true;
+    }
+    
     // ========== АКСЕЛЕРОМЕТР ==========
     let measurementData = [];
     let isRecording = false;
@@ -580,12 +654,15 @@
     function setButtonsState(enabled) {
         const saveBtn = document.getElementById('saveRefBtn');
         const compareBtn = document.getElementById('compareBtn');
+        const calibrateBtn = document.getElementById('calibrateBtn');
         if (enabled) {
             saveBtn.disabled = false;
             compareBtn.disabled = false;
+            calibrateBtn.style.display = 'block';
         } else {
             saveBtn.disabled = true;
             compareBtn.disabled = true;
+            calibrateBtn.style.display = 'none';
         }
     }
     
@@ -602,7 +679,7 @@
             sensorDivDiag.className = 'sensor-status not-working';
             sensorDivDiag.innerHTML = `<h4>❌ ДАТЧИК НЕ ОТВЕЧАЕТ</h4>
                                        <p>🔍 ВОЗМОЖНЫЕ ПРИЧИНЫ:<br>
-                                       • Нет разрешения на доступ к датчикам<br>
+                                       • Нет разрешения на доступ к датчикам (нажмите Разрешить)<br>
                                        • Открыто через http:// (нужен https://)<br>
                                        • Браузер не поддерживает DeviceMotion<br><br>
                                        🔧 РЕШЕНИЕ ДЛЯ ANDROID:<br>
@@ -614,7 +691,28 @@
         }
     }
     
+    function requestPermissionsAndCheck() {
+        if (!checkSensorSupport()) return;
+        
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+            showModal('📱', 'РАЗРЕШЕНИЕ ДЛЯ IPHONE', 'Нажмите «Разрешить доступ», чтобы приложение могло считывать вибрацию двигателя.');
+            DeviceMotionEvent.requestPermission()
+                .then(response => {
+                    if (response === 'granted') {
+                        checkSensorFromMenu();
+                    } else {
+                        showModal('❌', 'ДОСТУП ЗАПРЕЩЁН', 'Без доступа к датчикам диагностика невозможна. Разрешите доступ в настройках Safari.');
+                    }
+                })
+                .catch(err => console.log('Permission error:', err));
+        } else {
+            checkSensorFromMenu();
+        }
+    }
+    
     function checkSensorFromMenu() {
+        if (!checkSensorSupport()) return;
+        
         const sensorDiv = document.getElementById('sensorStatusDiag');
         sensorDiv.innerHTML = `<h4>🔍 ПРОВЕРКА ДАТЧИКА...</h4><p>Собираем данные 2 секунды</p>`;
         let testData = [];
@@ -637,8 +735,9 @@
     }
     
     function smoothData(rawValue) {
-        if (smoothValue === 0) smoothValue = rawValue;
-        smoothValue = rawValue * 0.2 + smoothValue * 0.8;
+        let compensated = Math.max(0, rawValue - calibrationOffset);
+        if (smoothValue === 0) smoothValue = compensated;
+        smoothValue = compensated * 0.2 + smoothValue * 0.8;
         return smoothValue;
     }
     
@@ -723,12 +822,16 @@
     function showResult(percent) {
         const resultBlock = document.getElementById('resultBlock');
         let html = '';
+        let resultText = '';
         if (percent <= 10) {
-            html = `<div class="result-big good"><div class="result-percent">✅ ${percent}%</div><div class="result-text">ДВИГАТЕЛЬ РАБОТАЕТ ТАК ЖЕ</div><div class="result-compare">Отклонений не обнаружено</div></div>`;
+            resultText = '✅ ВСЁ ХОРОШО, ДВИГАТЕЛЬ СТАБИЛЕН';
+            html = `<div class="result-big good"><div class="result-percent">✅ ${percent}%</div><div class="result-text">${resultText}</div><div class="result-compare">Отклонений не обнаружено. Можете ездить спокойно.</div></div>`;
         } else if (percent <= 25) {
-            html = `<div class="result-big bad"><div class="result-percent">⚠️ ${percent}%</div><div class="result-text">ЕСТЬ НЕБОЛЬШИЕ ИЗМЕНЕНИЯ</div><div class="result-compare">Рекомендуется наблюдать</div></div>`;
+            resultText = '⚠️ ЕСТЬ НЕБОЛЬШИЕ ИЗМЕНЕНИЯ';
+            html = `<div class="result-big bad"><div class="result-percent">⚠️ ${percent}%</div><div class="result-text">${resultText}</div><div class="result-compare">Рекомендуется наблюдать за двигателем. Возможно, пора менять свечи.</div></div>`;
         } else {
-            html = `<div class="result-big critical"><div class="result-percent">🔴 ${percent}%</div><div class="result-text">ДВИГАТЕЛЬ РАБОТАЕТ ХУЖЕ</div><div class="result-compare">Обратитесь к механику</div></div>`;
+            resultText = '🔴 ДВИГАТЕЛЬ РАБОТАЕТ ХУЖЕ';
+            html = `<div class="result-big critical"><div class="result-percent">🔴 ${percent}%</div><div class="result-text">${resultText}</div><div class="result-compare">Обратитесь к механику для диагностики.</div></div>`;
         }
         resultBlock.style.display = 'block';
         resultBlock.innerHTML = html;
@@ -745,17 +848,23 @@
         const ball = document.getElementById('bigBall');
         const timerEl = document.getElementById('bigTimer');
         const instructionEl = document.getElementById('diagnosticInstruction');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
         
         instructionEl.innerHTML = '🚗 Двигатель работает...<br>Не трогайте телефон';
         fullscreen.classList.remove('hidden');
         ball.className = 'big-ball red';
         timerEl.textContent = '30';
+        progressContainer.style.display = 'block';
+        progressFill.style.width = '0%';
         
         playSound('soundReady', function() {
             let timeLeft = 30;
             let timer = setInterval(() => {
                 timeLeft--;
                 timerEl.textContent = timeLeft;
+                let percentProgress = ((30 - timeLeft) / 30) * 100;
+                progressFill.style.width = percentProgress + '%';
                 if (timeLeft <= 0) {
                     clearInterval(timer);
                     startRecordingPhase();
@@ -768,10 +877,13 @@
         const ball = document.getElementById('bigBall');
         const timerEl = document.getElementById('bigTimer');
         const instructionEl = document.getElementById('diagnosticInstruction');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
         
         instructionEl.innerHTML = '📊 Запись вибраций...<br>Не трогайте телефон';
         ball.className = 'big-ball green';
         timerEl.textContent = '30';
+        progressFill.style.width = '0%';
         
         playSound('soundRecordingStart', function() {
             measurementData = [];
@@ -789,12 +901,15 @@
             let timer = setInterval(() => {
                 timeLeft--;
                 timerEl.textContent = timeLeft;
+                let percentProgress = ((30 - timeLeft) / 30) * 100;
+                progressFill.style.width = percentProgress + '%';
                 if (timeLeft <= 0) {
                     clearInterval(timer);
                     clearInterval(mockInterval);
                     isRecording = false;
                     playSound('soundRecordingEnd', function() {
                         document.getElementById('diagnosticFullscreen').classList.add('hidden');
+                        progressContainer.style.display = 'none';
                         const profile = createProfile(measurementData);
                         const now = new Date().toLocaleString('ru-RU');
                         
@@ -927,6 +1042,7 @@
             const r = JSON.parse(ref);
             drawComparison(r, r);
         }
+        requestPermissionsAndCheck();
     });
     
     document.addEventListener('touchstart', initAudioContext, {once: true});
