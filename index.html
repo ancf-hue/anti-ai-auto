@@ -636,7 +636,6 @@
         }, 2000);
     }
     
-    // Экспоненциальное сглаживание для графика
     function smoothData(rawValue) {
         if (smoothValue === 0) smoothValue = rawValue;
         smoothValue = rawValue * 0.2 + smoothValue * 0.8;
@@ -909,6 +908,15 @@
     }
     function closeModal() { document.getElementById('resultModal').classList.add('hidden'); }
     
+    // ========== PWA: РЕГИСТРАЦИЯ SERVICE WORKER ==========
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('✅ Офлайн-режим активирован!', reg))
+                .catch(err => console.log('❌ Ошибка PWA:', err));
+        });
+    }
+    
     window.addEventListener('DOMContentLoaded', () => {
         renderHistory();
         resizeCanvas();
@@ -923,11 +931,6 @@
     
     document.addEventListener('touchstart', initAudioContext, {once: true});
     document.addEventListener('click', initAudioContext, {once: true});
-    
-    // Регистрация Service Worker для PWA
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW error:', err));
-    }
 </script>
 </body>
 </html>
