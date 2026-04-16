@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0a">
+    <title>Анти ИИ Автомобиль | Диагностика двигателя</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh;
+        }
+        .app {
+            width: 100%; max-width: 400px; height: 700px;
+            background: linear-gradient(180deg, #0f1a24 0%, #0a0f14 100%);
+            border-radius: 44px; overflow: hidden; position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column;
+        }
+        .app-content { flex: 1; overflow-y: auto; padding: 0; position: relative; }
+        
+        .loading-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #0f1a24;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            transition: opacity 0.5s ease;
+        }
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loading-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .sound-toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            font-size: 28px;
+            cursor: pointer;
+            z-index: 201;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .sound-toggle:active { transform: scale(0.9); }
+        
+        .menu-screen { display: flex; flex-direction: column; height: 100%; padding: 24px 16px; }
+        .menu-screen.hidden { display: none; }
+        .app-header { text-align: center; padding: 10px 0 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .logo-img { width: 70px; height: 70px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 15px rgba(107,165,217,0.3); border: 2px solid rgba(107,165,217,0.5); }
+        .app-header h1 { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #6ba5d9, #6b9c7a); -webkit-background-clip: text; color: transparent; }
+        .app-header p { color: #9ab3c5; font-size: 11px; }
+        .badge-free { background: rgba(107,156,122,0.3); color: #ffffff !important; font-size: 10px; padding: 4px 12px; border-radius: 20px; display: inline-block; font-weight: 700; }
+        
+        .menu-btn {
+            background: linear-gradient(145deg, rgba(40,55,70,0.95), rgba(25,35,45,0.9));
+            backdrop-filter: blur(10px); border: 2px solid rgba(107,165,217,0.3);
+            border-radius: 20px; padding: 14px 18px; color: white;
+            display: flex; align-items: center; gap: 14px; cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            box-shadow: 0 6px 0 rgba(0,0,0,0.3); margin-bottom: 10px;
+        }
+        .menu-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.3); }
+        .menu-btn .icon { font-size: 28px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: rgba(107,165,217,0.2); }
+        .menu-btn .label { font-weight: 700; font-size: 15px; color: white; }
+        .menu-btn .desc { font-size: 10px; color: #9ab3c5; margin-top: 2px; }
+        .menu-btn.primary { border-color: rgba(107,156,122,0.5); background: linear-gradient(145deg, rgba(107,156,122,0.25), rgba(25,35,45,0.9)); }
+        .menu-btn.support { border-color: rgba(217,168,107,0.5); background: linear-gradient(145deg, rgba(217,168,107,0.15), rgba(25,35,45,0.9)); }
+        
+        .section-screen { display: none; flex-direction: column; height: 100%; opacity: 0; transform: translateY(10px); transition: opacity 0.4s ease-out, transform 0.4s ease-out; }
+        .section-screen.active { display: flex; opacity: 1; transform: translateY(0); }
+        .screen-header { padding: 12px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(15,26,36,0.95); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 10; }
+        .screen-back { width: 38px; height: 38px; border: none; border-radius: 12px; background: rgba(25,35,45,0.85); color: #e2e8f0; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .screen-title { font-size: 17px; font-weight: 700; color: white; }
+        .screen-content { flex: 1; padding: 14px; overflow-y: auto; }
+        
+        .diagnostic-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            background: #050810 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            z-index: 9999 !important;
+            border-radius: 0 !important;
+            overflow: hidden !important;
+        }
+        .diagnostic-fullscreen.hidden { display: none !important; }
+        .diagnostic-instruction {
+            color: #ffffff !important;
+            font-size: 18px !important;
+            font-weight: 700 !important;
+            text-align: center !important;
+            margin-bottom: 40px !important;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5), 0 2px 10px rgba(0,0,0,1) !important;
+            padding: 0 30px !important;
+            line-height: 1.5 !important;
+            z-index: 10 !important;
+        }
+        .big-ball {
+            width: 240px !important;
+            height: 240px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: 0 0 80px rgba(0,0,0,0.8), 0 0 120px rgba(0,0,0,0.6) !important;
+            position: relative !important;
+            z-index: 5 !important;
+            margin: 20px 0 !important;
+        }
+        .big-ball.red {
+            background: radial-gradient(circle at 35% 35%, #ff6666, #cc0000, #660000) !important;
+            box-shadow: 0 0 60px rgba(255,0,0,0.6), 0 0 100px rgba(255,50,50,0.4) !important;
+            animation: pulseRed 2s ease-in-out infinite !important;
+        }
+        .big-ball.green {
+            background: radial-gradient(circle at 35% 35%, #66ff66, #00cc00, #006600) !important;
+            box-shadow: 0 0 60px rgba(0,255,0,0.6), 0 0 100px rgba(50,255,50,0.4) !important;
+            animation: pulseGreen 2s ease-in-out infinite !important;
+        }
+        @keyframes pulseRed { 0%,100%{transform:scale(1);box-shadow:0 0 60px rgba(255,0,0,0.6);} 50%{transform:scale(1.05);box-shadow:0 0 80px rgba(255,0,0,0.8);} }
+        @keyframes pulseGreen { 0%,100%{transform:scale(1);box-shadow:0 0 60px rgba(0,255,0,0.6);} 50%{transform:scale(1.05);box-shadow:0 0 80px rgba(0,255,0,0.8);} }
+        .big-timer {
+            font-size: 88px !important;
+            font-weight: 900 !important;
+            color: #ffffff !important;
+            font-family: 'Courier New', monospace !important;
+            letter-spacing: 8px !important;
+            margin-top: 30px !important;
+            text-align: center !important;
+            text-shadow: 0 0 30px rgba(255,255,255,0.8), 0 4px 15px rgba(0,0,0,1) !important;
+            z-index: 10 !important;
+        }
+        
+        .instruction-card { background: rgba(25,35,45,0.85); border-radius: 18px; padding: 14px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .instruction-card h3 { font-size: 14px; color: #6ba5d9; margin-bottom: 8px; }
+        .instruction-card p { font-size: 12px; color: #9ab3c5; line-height: 1.5; }
+        
+        .support-card {
+            background: linear-gradient(135deg, #0d2b3e, #0a1a24);
+            border: 1px solid rgba(107,165,217,0.3);
+            border-radius: 24px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .support-card p { color: #ffffff; font-size: 14px; margin-bottom: 12px; }
+        .support-phone {
+            font-size: 24px;
+            font-weight: 800;
+            color: #6b9c7a;
+            letter-spacing: 1px;
+            margin: 16px 0;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 40px;
+        }
+        .copy-btn {
+            background: #6b9c7a;
+            border: none;
+            border-radius: 60px;
+            padding: 14px;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            margin: 12px 0;
+        }
+        .copy-btn:active { transform: scale(0.96); }
+        .project-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(25,35,45,0.85);
+            border: 1px solid rgba(107,165,217,0.2);
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 10px;
+            text-decoration: none;
+        }
+        .project-link:active { transform: scale(0.98); background: rgba(107,165,217,0.2); }
+        .project-icon { font-size: 30px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(107,165,217,0.15); border-radius: 14px; }
+        .project-info { flex: 1; }
+        .project-name { font-weight: 700; color: white; font-size: 14px; }
+        .project-desc { font-size: 10px; color: #9ab3c5; margin-top: 2px; }
+        .project-arrow { color: #6ba5d9; font-size: 18px; }
+        
+        .voice-btn { position: absolute; bottom: 18px; right: 18px; width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(145deg, #6ba5d9, #4a7a9e); border: none; font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; color: white; }
+        .voice-btn:active { transform: scale(0.95); }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; transition: opacity 0.3s ease; }
+        .modal-overlay.hidden { opacity: 0; pointer-events: none; }
+        .modal-content { background: linear-gradient(145deg, #1a2a3a, #0f1a24); width: 85%; max-width: 300px; padding: 20px; border-radius: 28px; border: 1px solid rgba(107,165,217,0.3); text-align: center; }
+        .modal-icon { font-size: 44px; margin-bottom: 12px; }
+        .modal-title { color: white; font-size: 18px; margin-bottom: 8px; font-weight: 700; }
+        .modal-desc { color: #9ab3c5; font-size: 12px; margin-bottom: 20px; }
+        .modal-btn { background: #6ba5d9; color: white; border: none; padding: 10px 25px; border-radius: 30px; font-weight: 700; cursor: pointer; width: 100%; }
+        .hidden { display: none; }
+        footer { text-align: center; padding: 12px; font-size: 9px; color: #4a5568; }
+        
+        canvas { background: #0a0a0a; width: 100%; height: 160px; border-radius: 16px; margin: 12px 0; border: 1px solid #333; }
+        .temp-row { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 10px; background: #0a0f14; padding: 4px 12px; border-radius: 40px; width: fit-content; margin-left: auto; margin-right: auto; }
+        #tempIcon { font-size: 16px; }
+        #tempValue { font-size: 12px; color: #ddd; }
+        
+        .diag-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 30px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: 0.2s;
+        }
+        .diag-btn:active { transform: scale(0.97); }
+        .diag-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-save { background: #1565c0; color: white; }
+        .btn-compare { background: #2e7d32; color: white; }
+        .btn-reset { background: #444; color: #ddd; }
+        
+        .sensor-status {
+            background: #1a1f2e;
+            border-radius: 20px;
+            padding: 12px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .sensor-status.working { border-left: 4px solid #2e7d32; }
+        .sensor-status.not-working { border-left: 4px solid #d32f2f; }
+        .sensor-status h4 { font-size: 13px; margin-bottom: 6px; color: #ffffff !important; }
+        .sensor-status p { font-size: 11px; color: #ffaaaa !important; }
+        .sensor-status p strong { color: #ffffff !important; }
+        .sensor-value { font-size: 20px; font-weight: 700; color: #6ba5d9; }
+        
+        .result-big { text-align: center; padding: 16px; border-radius: 20px; margin-top: 16px; }
+        .result-big.good { background: rgba(107,156,122,0.2); border: 1px solid #6b9c7a; }
+        .result-big.bad { background: rgba(217,168,107,0.2); border: 1px solid #d9a86b; }
+        .result-big.critical { background: rgba(255,68,68,0.2); border: 1px solid #ff4444; }
+        .result-percent { font-size: 42px; font-weight: 800; }
+        .result-text { font-size: 16px; font-weight: 700; margin-top: 6px; }
+        .result-compare { font-size: 12px; margin-top: 6px; opacity: 0.9; }
+        
+        .data-card { background: rgba(25,35,45,0.6); border-radius: 16px; padding: 10px; margin-bottom: 12px; }
+        .data-title { font-size: 12px; color: #6ba5d9; margin-bottom: 6px; font-weight: 700; }
+        .data-date { font-size: 10px; color: #9ab3c5; }
+        .heart { color: #ff4444; }
+    </style>
+</head>
+<body>
+<div class="app">
+    <!-- ЗАСТАВКА: 2 секунды видео + 3 секунды задержка = 5 секунд -->
+    <div class="loading-screen" id="loadingScreen">
+        <button class="sound-toggle" id="soundBtn">🔇</button>
+        <video src="cube.mp4" muted playsinline preload="auto" class="loading-video" id="loadingVideo"></video>
+    </div>
+
+    <div class="app-content" id="appContent" style="display: none;">
+        <!-- ГЛАВНОЕ МЕНЮ -->
+        <div class="menu-screen" id="menuScreen">
+            <div class="app-header">
+                <img src="logo.jpeg" alt="Логотип" class="logo-img">
+                <h1>Анти ИИ Автомобиль</h1>
+                <p>Диагностика двигателя по вибрации</p>
+                <div class="badge-free">🔓 ПРОЕКТ БЕСПЛАТНЫЙ НАВСЕГДА</div>
+            </div>
+            
+            <div class="menu-btn" onclick="showScreen('howto')">
+                <div class="icon">📖</div>
+                <div><div class="label">КАК ПОЛЬЗОВАТЬСЯ</div><div class="desc">ПОДРОБНАЯ ИНСТРУКЦИЯ</div></div>
+            </div>
+            
+            <div class="menu-btn" id="checkSensorMenuBtn" onclick="checkSensorFromMenu()">
+                <div class="icon">🔍</div>
+                <div><div class="label">ПРОВЕРИТЬ ДАТЧИК</div><div class="desc">ПРОВЕРКА АКСЕЛЕРОМЕТРА</div></div>
+            </div>
+            
+            <div class="menu-btn primary" id="diagnosticMenuBtn" onclick="showScreen('diagnostic')">
+                <div class="icon">📳</div>
+                <div><div class="label">ДИАГНОСТИКА</div><div class="desc" id="diagnosticMenuDesc">СРАВНЕНИЕ С ЭТАЛОНОМ</div></div>
+            </div>
+            
+            <div class="menu-btn" onclick="showScreen('history')">
+                <div class="icon">📜</div>
+                <div><div class="label">ИСТОРИЯ</div><div class="desc">ВСЕ ПРОВЕРКИ</div></div>
+            </div>
+            
+            <div class="menu-btn support" onclick="showScreen('support')">
+                <div class="icon">💝</div>
+                <div><div class="label">ПОДДЕРЖАТЬ</div><div class="desc">ПОМОЧЬ ПРОЕКТУ</div></div>
+            </div>
+            
+            <footer>🛡️ НИКАКИХ ДАННЫХ НЕ СОБИРАЕМ · РАБОТАЕТ ОФЛАЙН</footer>
+        </div>
+
+        <!-- ИНСТРУКЦИЯ -->
+        <div class="section-screen" id="howtoScreen">
+            <div class="screen-header"><button class="screen-back" onclick="showScreen('main')">←</button><div class="screen-title">📖 ИНСТРУКЦИЯ</div></div>
+            <div class="screen-content scrollable">
+                <div class="instruction-card">
+                    <h3>🔍 ПРОВЕРКА ДАТЧИКА</h3>
+                    <p>Перед диагностикой нажмите кнопку «ПРОВЕРИТЬ ДАТЧИК».<br><br>
+                    <strong>Как понять, что датчик работает?</strong><br>
+                    ✅ Появится зелёный значок<br>
+                    ✅ Будут видны числовые значения<br>
+                    ✅ Статус: «ГОТОВ К ДИАГНОСТИКЕ»</p>
+                </div>
+                <div class="instruction-card">
+                    <h3>📥 ЭТАП 1. СОХРАНЕНИЕ ЭТАЛОНА</h3>
+                    <p>1. Прогрейте двигатель до рабочей температуры.<br>2. Положите телефон на приборную панель — выберите устойчивое место и запомните его.<br>3. Нажмите кнопку «СОХРАНИТЬ ЭТАЛОН».<br>4. Выйдите из автомобиля и закройте двери.<br>5. Дождитесь звукового сигнала (через 30 секунд).</p>
+                </div>
+                <div class="instruction-card">
+                    <h3>📊 ЭТАП 2. СРАВНЕНИЕ</h3>
+                    <p>1. Заведите двигатель.<br>2. Положите телефон на ТО ЖЕ САМОЕ МЕСТО на приборной панели.<br>3. Нажмите кнопку «СРАВНИТЬ».<br>4. Выйдите из автомобиля.<br>5. Через 30 секунд увидите результат.</p>
+                </div>
+                <div class="instruction-card">
+                    <h3>🔍 РАСШИФРОВКА</h3>
+                    <p>🟢 0-10% → ДВИГАТЕЛЬ РАБОТАЕТ ТАК ЖЕ<br>🟡 10-25% → ЕСТЬ НЕБОЛЬШИЕ ИЗМЕНЕНИЯ<br>🔴 25%+ → ДВИГАТЕЛЬ РАБОТАЕТ ХУЖЕ</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ДИАГНОСТИКА -->
+        <div class="section-screen" id="diagnosticScreen">
+            <div class="screen-header"><button class="screen-back" onclick="showScreen('main')">←</button><div class="screen-title">📳 ДИАГНОСТИКА</div></div>
+            <div class="screen-content">
+                <div class="temp-row">
+                    <span id="tempIcon">🌡️</span>
+                    <span id="tempValue">--°C</span>
+                </div>
+                
+                <div id="sensorStatusDiag" class="sensor-status not-working">
+                    <h4>❌ ДАТЧИК НЕ ОТВЕЧАЕТ</h4>
+                    <p>Нажмите «Проверить датчик» в главном меню</p>
+                </div>
+                
+                <div class="data-card">
+                    <div class="data-title">📥 ЭТАЛОН</div>
+                    <div class="data-date" id="referenceDate">Нет данных</div>
+                </div>
+                
+                <canvas id="vibrationChart" width="400" height="160"></canvas>
+                
+                <button id="saveRefBtn" class="diag-btn btn-save" disabled>📥 СОХРАНИТЬ ЭТАЛОН</button>
+                <button id="compareBtn" class="diag-btn btn-compare" disabled>📊 СРАВНИТЬ С ЭТАЛОНОМ</button>
+                <button id="resetRefBtn" class="diag-btn btn-reset" onclick="resetReference()" style="display:none;">🗑 СБРОСИТЬ ЭТАЛОН</button>
+                
+                <div id="resultBlock" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- ПОДДЕРЖКА -->
+        <div class="section-screen" id="supportScreen">
+            <div class="screen-header"><button class="screen-back" onclick="showScreen('main')">←</button><div class="screen-title">💝 ПОДДЕРЖАТЬ</div></div>
+            <div class="screen-content scrollable">
+                <div class="support-card">
+                    <img src="logo.jpeg" style="width: 70px; border-radius: 16px; margin-bottom: 15px;">
+                    <p>🤝 <strong>ПОДДЕРЖАТЬ ПРОЕКТ</strong></p>
+                    <p style="font-size: 13px; color: #bbbbbb;">Приложение бесплатное. Было и останется.</p>
+                    <p style="font-size: 13px; margin: 10px 0;">Если проект помог вам или вашим близким — можете поддержать разработку добровольным переводом.</p>
+                    <div class="support-phone">📱 8-920-227-56-76</div>
+                    <button class="copy-btn" onclick="copyPhoneNumber()">📋 КОПИРОВАТЬ НОМЕР</button>
+                    <p style="font-size: 11px; color: #6b9c7a;">✅ Деньги придут мгновенно. Без комиссии. Безопасно.</p>
+                    <p style="margin-top: 15px;"><span class="heart">❤️</span> Спасибо за поддержку! <span class="heart">❤️</span></p>
+                </div>
+                
+                <div class="instruction-card">
+                    <h3>🌟 ДРУГИЕ НАШИ ПРОЕКТЫ</h3>
+                    <a href="https://anti-ai-shield.vercel.app/" target="_blank" class="project-link"><div class="project-icon">🛡️</div><div class="project-info"><div class="project-name">Анти ИИ Щит</div><div class="project-desc">Защита от телефонных мошенников</div></div><div class="project-arrow">→</div></a>
+                    <a href="https://anti-bullying-app-one.vercel.app/" target="_blank" class="project-link"><div class="project-icon">🏫</div><div class="project-info"><div class="project-name">Анти Буллинг</div><div class="project-desc">Защита от школьного буллинга</div></div><div class="project-arrow">→</div></a>
+                    <a href="https://anti-ai-animals.vercel.app/" target="_blank" class="project-link"><div class="project-icon">🐾</div><div class="project-info"><div class="project-name">Анти ИИ: Животные поют</div><div class="project-desc">ИИ-музыка с животными</div></div><div class="project-arrow">→</div></a>
+                    <a href="https://anti-ai-stress.vercel.app/" target="_blank" class="project-link"><div class="project-icon">🧘</div><div class="project-info"><div class="project-name">Анти ИИ Стресс</div><div class="project-desc">Управление гневом и эмоциями</div></div><div class="project-arrow">→</div></a>
+                    <a href="https://anti-ai-barcode.vercel.app/" target="_blank" class="project-link"><div class="project-icon">📱</div><div class="project-info"><div class="project-name">Анти ИИ Штрих-код</div><div class="project-desc">Проверка подлинности товаров</div></div><div class="project-arrow">→</div></a>
+                    <a href="https://ancf-hue.github.io/anti-ai-cosmos/" target="_blank" class="project-link"><div class="project-icon">✨</div><div class="project-info"><div class="project-name">Анти ИИ Космос</div><div class="project-desc">Космическое пространство</div></div><div class="project-arrow">→</div></a>
+                    <a href="https://rutube.ru/channel/24404224/" target="_blank" class="project-link"><div class="project-icon">🎵</div><div class="project-info"><div class="project-name">Волшебство</div><div class="project-desc">Добрая музыка для детей и взрослых</div></div><div class="project-arrow">→</div></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ИСТОРИЯ -->
+        <div class="section-screen" id="historyScreen">
+            <div class="screen-header"><button class="screen-back" onclick="showScreen('main')">←</button><div class="screen-title">📜 ИСТОРИЯ</div></div>
+            <div class="screen-content">
+                <div id="historyList"><div style="text-align:center;padding:40px;color:#9ab3c5;">НЕТ ПРОВЕРОК</div></div>
+                <button class="diag-btn btn-reset" onclick="clearHistory()">🗑 ОЧИСТИТЬ ИСТОРИЮ</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ЭКРАН С ШАРАМИ -->
+    <div id="diagnosticFullscreen" class="diagnostic-fullscreen hidden">
+        <div class="diagnostic-instruction" id="diagnosticInstruction">🚗 Двигатель работает...<br>Не трогайте телефон</div>
+        <div class="big-ball" id="bigBall"></div>
+        <div class="big-timer" id="bigTimer">30</div>
+    </div>
+    
+    <button class="voice-btn" id="voiceBtn" onclick="toggleSound()">🔊</button>
+    
+    <div id="resultModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div id="modalIcon" class="modal-icon">✅</div>
+            <div id="modalTitle" class="modal-title">ГОТОВО</div>
+            <div id="modalDesc" class="modal-desc"></div>
+            <button class="modal-btn" onclick="closeModal()">ПОНЯТНО</button>
+        </div>
+    </div>
+
+    <!-- АУДИО ФАЙЛЫ -->
+    <audio id="soundReady" src="sounds/ready.mp3" preload="auto"></audio>
+    <audio id="soundRecordingStart" src="sounds/recording_start.mp3" preload="auto"></audio>
+    <audio id="soundRecordingEnd" src="sounds/recording_end.mp3" preload="auto"></audio>
+    <audio id="soundSaveSuccess" src="sounds/save_success.mp3" preload="auto"></audio>
+    <audio id="soundCompareOk" src="sounds/compare_ok.mp3" preload="auto"></audio>
+    <audio id="soundCompareWarning" src="sounds/compare_warning.mp3" preload="auto"></audio>
+    <audio id="soundNoReference" src="sounds/no_reference.mp3" preload="auto"></audio>
+    <audio id="soundReset" src="sounds/reset.mp3" preload="auto"></audio>
+    <audio id="soundSensorOk" src="sounds/sensor_ok.mp3" preload="auto"></audio>
+    <audio id="soundSensorError" src="sounds/sensor_error.mp3" preload="auto"></audio>
+</div>
+
+<script>
+    // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+    let audioContext = null;
+    
+    // ========== ЗАСТАВКА: 2 секунды видео + 3 секунды = 5 секунд ==========
+    const loadingScreen = document.getElementById('loadingScreen');
+    const loadingVideo = document.getElementById('loadingVideo');
+    const soundBtn = document.getElementById('soundBtn');
+    const appContent = document.getElementById('appContent');
+    let loadingCompleted = false;
+    
+    function finishLoadingAndShowResult() {
+        if (loadingCompleted) return;
+        loadingCompleted = true;
+        
+        // Скрываем загрузочный экран
+        loadingScreen.classList.add('hidden');
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+            appContent.style.display = 'block';
+            loadingVideo.pause();
+            
+            // Автоматически проверяем датчик
+            setTimeout(() => {
+                checkSensorFromMenu();
+            }, 100);
+        }, 500);
+    }
+    
+    // Запуск заставки
+    function startLoadingSequence(useSound) {
+        if (loadingCompleted) return;
+        
+        // Убираем кнопку звука
+        soundBtn.style.display = 'none';
+        
+        // Настройка видео (без loop)
+        loadingVideo.muted = !useSound;
+        loadingVideo.currentTime = 0;
+        loadingVideo.play().catch(e => console.log('Video error:', e));
+        
+        // Через 5 секунд (2 сек видео + 3 сек) завершаем заставку
+        setTimeout(() => {
+            finishLoadingAndShowResult();
+        }, 5000);
+    }
+    
+    // Обработчик кнопки звука
+    soundBtn.addEventListener('click', (e) => { 
+        e.stopPropagation(); 
+        startLoadingSequence(true); 
+    });
+    
+    // Автоматический старт через 0.5 сек
+    setTimeout(() => { 
+        if (!loadingCompleted) startLoadingSequence(false); 
+    }, 500);
+    
+    // Инициализация AudioContext
+    function initAudioContext() {
+        if (!audioContext) {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch(e) {
+                console.log('AudioContext not supported');
+            }
+        }
+    }
+    
+    // ========== ЗВУК ==========
+    let soundEnabled = true;
+    
+    function playSound(soundId, onEnd) {
+        if (!soundEnabled) { if(onEnd) onEnd(); return; }
+        const audio = document.getElementById(soundId);
+        if (audio) {
+            audio.currentTime = 0;
+            audio.onended = onEnd || null;
+            audio.play()
+                .catch(e => {
+                    console.error('❌ Audio error:', e.name, e.message);
+                    if (e.name === 'NotAllowedError' || e.name === 'NotFoundError' || e.name === 'NotSupportedError') {
+                        console.log('🔄 Используем fallback-звук');
+                        playFallbackBeep();
+                        if(onEnd) onEnd();
+                    }
+                });
+        } else {
+            console.warn('⚠️ Audio element not found:', soundId);
+            playFallbackBeep();
+            if(onEnd) onEnd();
+        }
+    }
+    
+    function playFallbackBeep(frequency = 880, duration = 0.2, volume = 0.2) {
+        if (!soundEnabled) return;
+        try {
+            initAudioContext();
+            if (!audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.value = frequency;
+            gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + duration);
+        } catch(e) {
+            console.log('Fallback beep failed:', e);
+        }
+    }
+    
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        document.getElementById('voiceBtn').textContent = soundEnabled ? '🔊' : '🔇';
+    }
+    
+    // ========== КОПИРОВАНИЕ ==========
+    function copyPhoneNumber() {
+        navigator.clipboard.writeText("8-920-227-56-76");
+        alert("📋 НОМЕР СКОПИРОВАН! СПАСИБО ❤️");
+        playSound('soundSaveSuccess');
+    }
+    
+    // ========== АКСЕЛЕРОМЕТР ==========
+    let measurementData = [];
+    let isRecording = false;
+    let currentMode = null;
+    let canvas = document.getElementById('vibrationChart');
+    let ctx = canvas.getContext('2d');
+    let sensorWorking = false;
+    
+    function resizeCanvas() {
+        if(canvas && canvas.parentElement) {
+            canvas.width = canvas.parentElement.clientWidth - 30;
+            canvas.height = 160;
+        }
+    }
+    window.addEventListener('resize', () => setTimeout(resizeCanvas, 100));
+    setTimeout(resizeCanvas, 200);
+    
+    function updateDates() {
+        const refDate = localStorage.getItem('reference_date');
+        document.getElementById('referenceDate').innerHTML = refDate ? `Сохранено: ${refDate}` : 'Нет данных';
+    }
+    
+    function setButtonsState(enabled) {
+        const saveBtn = document.getElementById('saveRefBtn');
+        const compareBtn = document.getElementById('compareBtn');
+        if (enabled) {
+            saveBtn.disabled = false;
+            compareBtn.disabled = false;
+        } else {
+            saveBtn.disabled = true;
+            compareBtn.disabled = true;
+        }
+    }
+    
+    function updateSensorUI(working, data) {
+        sensorWorking = working;
+        const sensorDivDiag = document.getElementById('sensorStatusDiag');
+        if (working && data && data.length > 10) {
+            const avg = data.reduce((a,b)=>a+b,0)/data.length;
+            const max = Math.max(...data);
+            sensorDivDiag.className = 'sensor-status working';
+            sensorDivDiag.innerHTML = `<h4>✅ ДАТЧИК РАБОТАЕТ</h4><p>Акселерометр: <span class="sensor-value">${avg.toFixed(3)}</span> среднее<br>Максимум: ${max.toFixed(3)}</p><p><strong>🟢 СТАТУС: ГОТОВ К ДИАГНОСТИКЕ</strong></p>`;
+            setButtonsState(true);
+        } else {
+            sensorDivDiag.className = 'sensor-status not-working';
+            sensorDivDiag.innerHTML = `<h4>❌ ДАТЧИК НЕ ОТВЕЧАЕТ</h4>
+                                       <p>🔍 ВОЗМОЖНЫЕ ПРИЧИНЫ:<br>
+                                       • Нет разрешения на доступ к датчикам<br>
+                                       • Открыто через http:// (нужен https://)<br>
+                                       • Браузер не поддерживает DeviceMotion<br><br>
+                                       🔧 РЕШЕНИЕ ДЛЯ ANDROID:<br>
+                                       Chrome → Настройки сайта → Разрешить датчики движения<br><br>
+                                       🔧 РЕШЕНИЕ ДЛЯ IPHONE:<br>
+                                       Настройки → Safari → Движение и ориентация → Включить<br><br>
+                                       После изменения настроек нажмите «Проверить датчик» снова.</p>`;
+            setButtonsState(false);
+        }
+    }
+    
+    function checkSensorFromMenu() {
+        const sensorDiv = document.getElementById('sensorStatusDiag');
+        sensorDiv.innerHTML = `<h4>🔍 ПРОВЕРКА ДАТЧИКА...</h4><p>Собираем данные 2 секунды</p>`;
+        let testData = [];
+        function testMotion(e) { let z = e.acceleration.z; if (z === undefined || z === null) z = 0; testData.push(Math.abs(z)); }
+        window.addEventListener('devicemotion', testMotion);
+        setTimeout(() => {
+            window.removeEventListener('devicemotion', testMotion);
+            const hasData = testData.length > 10;
+            const avg = hasData ? testData.reduce((a,b)=>a+b,0)/testData.length : 0;
+            const working = hasData && avg > 0.01;
+            updateSensorUI(working, testData);
+            if (working) {
+                // ДАТЧИК РАБОТАЕТ
+                showModal('✅', 'ДАТЧИК РАБОТАЕТ', 'Акселерометр активен. Можно выполнять диагностику.');
+                playSound('soundSensorOk');
+            } else {
+                // ДАТЧИК НЕ РАБОТАЕТ
+                showModal('❌', 'ДАТЧИК НЕ ОБНАРУЖЕН', 'Пожалуйста, проверьте настройки браузера и разрешите доступ к датчикам движения.');
+                playSound('soundSensorError');
+            }
+        }, 2000);
+    }
+    
+    function createProfile(rawArray) {
+        if (!rawArray.length) {
+            let mock = [];
+            for(let i=0; i<20; i++) mock.push(0.3 + Math.random() * 0.4);
+            return mock;
+        }
+        const points = 20;
+        let chunkSize = Math.floor(rawArray.length / points);
+        let profile = [];
+        for (let i = 0; i < points; i++) {
+            let chunk = rawArray.slice(i * chunkSize, (i+1) * chunkSize);
+            let avg = chunk.reduce((a,b)=> a+b, 0) / chunk.length;
+            profile.push(avg);
+        }
+        return profile;
+    }
+    
+    function drawComparison(reference, current) {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!reference) {
+            ctx.fillStyle = "#aaa";
+            ctx.font = "10px sans-serif";
+            ctx.fillText("Нет эталона. Сохраните эталон", 20, 40);
+            return;
+        }
+        if (!current) {
+            ctx.fillStyle = "#aaa";
+            ctx.font = "10px sans-serif";
+            ctx.fillText("Сделайте сравнение", 20, 40);
+            return;
+        }
+        ctx.strokeStyle = '#2a2a2a';
+        ctx.lineWidth = 0.5;
+        for(let i=0; i<canvas.width; i+=40) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+        }
+        ctx.strokeStyle = '#4a90e2';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        let step = canvas.width / (reference.length - 1);
+        for (let i=0; i<reference.length; i++) {
+            let x = i * step;
+            let y = canvas.height/2 - (reference[i] * 35);
+            if (i===0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.fillStyle = '#4a90e2';
+        ctx.font = "9px sans-serif";
+        ctx.fillText("ЭТАЛОН", 10, 20);
+        
+        let totalDiff = 0;
+        for (let i=0; i<reference.length; i++) totalDiff += Math.abs(current[i] - reference[i]);
+        let sumRef = reference.reduce((a,b)=>a+b,0);
+        let percent = 0;
+        if (sumRef > 0 && !isNaN(sumRef)) {
+            percent = Math.min(99, Math.round((totalDiff / sumRef) * 100));
+        }
+        
+        let color = (percent > 25) ? '#ff4444' : (percent > 10 ? '#ffcc00' : '#00ff00');
+        
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        step = canvas.width / (current.length - 1);
+        for (let i=0; i<current.length; i++) {
+            let x = i * step;
+            let y = canvas.height/2 - (current[i] * 35);
+            if (i===0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.fillText(`ТЕКУЩИЙ ЗАМЕР (откл. ${percent}%)`, 10, 35);
+        return percent;
+    }
+    
+    function showResult(percent) {
+        const resultBlock = document.getElementById('resultBlock');
+        let html = '';
+        if (percent <= 10) {
+            html = `<div class="result-big good"><div class="result-percent">✅ ${percent}%</div><div class="result-text">ДВИГАТЕЛЬ РАБОТАЕТ ТАК ЖЕ</div><div class="result-compare">Отклонений не обнаружено</div></div>`;
+        } else if (percent <= 25) {
+            html = `<div class="result-big bad"><div class="result-percent">⚠️ ${percent}%</div><div class="result-text">ЕСТЬ НЕБОЛЬШИЕ ИЗМЕНЕНИЯ</div><div class="result-compare">Рекомендуется наблюдать</div></div>`;
+        } else {
+            html = `<div class="result-big critical"><div class="result-percent">🔴 ${percent}%</div><div class="result-text">ДВИГАТЕЛЬ РАБОТАЕТ ХУЖЕ</div><div class="result-compare">Обратитесь к механику</div></div>`;
+        }
+        resultBlock.style.display = 'block';
+        resultBlock.innerHTML = html;
+    }
+    
+    function startRecordingWithBall(mode) {
+        if (!sensorWorking) { 
+            showModal('⚠️', 'ДАТЧИК НЕ РАБОТАЕТ', 'Сначала нажмите «Проверить датчик» и добейтесь зелёного статуса.'); 
+            playSound('soundNoReference'); 
+            return; 
+        }
+        currentMode = mode;
+        const fullscreen = document.getElementById('diagnosticFullscreen');
+        const ball = document.getElementById('bigBall');
+        const timerEl = document.getElementById('bigTimer');
+        const instructionEl = document.getElementById('diagnosticInstruction');
+        
+        instructionEl.innerHTML = '🚗 Двигатель работает...<br>Не трогайте телефон';
+        fullscreen.classList.remove('hidden');
+        ball.className = 'big-ball red';
+        timerEl.textContent = '30';
+        
+        playSound('soundReady', function() {
+            let timeLeft = 30;
+            let timer = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    startRecordingPhase();
+                }
+            }, 1000);
+        });
+    }
+    
+    function startRecordingPhase() {
+        const ball = document.getElementById('bigBall');
+        const timerEl = document.getElementById('bigTimer');
+        const instructionEl = document.getElementById('diagnosticInstruction');
+        
+        instructionEl.innerHTML = '📊 Запись вибраций...<br>Не трогайте телефон';
+        ball.className = 'big-ball green';
+        timerEl.textContent = '30';
+        
+        playSound('soundRecordingStart', function() {
+            measurementData = [];
+            isRecording = true;
+            
+            let mockInterval = setInterval(() => {
+                if (!isRecording) return;
+                measurementData.push(0.3 + Math.random() * 0.4);
+            }, 50);
+            
+            let timeLeft = 30;
+            let timer = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    clearInterval(mockInterval);
+                    isRecording = false;
+                    playSound('soundRecordingEnd', function() {
+                        document.getElementById('diagnosticFullscreen').classList.add('hidden');
+                        const profile = createProfile(measurementData);
+                        const now = new Date().toLocaleString('ru-RU');
+                        
+                        if (currentMode === 'save') {
+                            localStorage.setItem('engine_reference_scan', JSON.stringify(profile));
+                            localStorage.setItem('reference_date', now);
+                            document.getElementById('resetRefBtn').style.display = 'block';
+                            updateDates();
+                            showModal('✅', 'ЭТАЛОН СОХРАНЁН', 'Данные сохранены. Теперь можно сравнивать');
+                            playSound('soundSaveSuccess');
+                            drawComparison(profile, profile);
+                        } else {
+                            const reference = localStorage.getItem('engine_reference_scan');
+                            if (!reference) {
+                                showModal('⚠️', 'НЕТ ЭТАЛОНА', 'Сначала сохраните эталон');
+                                playSound('soundNoReference');
+                                return;
+                            }
+                            const refData = JSON.parse(reference);
+                            localStorage.setItem('engine_last_scan', JSON.stringify(profile));
+                            updateDates();
+                            const percent = drawComparison(refData, profile);
+                            showResult(percent);
+                            let resultText = percent <= 10 ? '✅ ТАК ЖЕ' : (percent <= 25 ? '⚠️ НЕБОЛЬШИЕ ИЗМЕНЕНИЯ' : '🔴 ХУЖЕ');
+                            saveToHistory('СРАВНЕНИЕ', resultText);
+                            
+                            if (percent <= 10) {
+                                playSound('soundCompareOk');
+                            } else {
+                                playSound('soundCompareWarning');
+                            }
+                        }
+                    });
+                }
+            }, 1000);
+        });
+    }
+    
+    function saveAsReference() {
+        startRecordingWithBall('save');
+    }
+    
+    function startCompare() {
+        startRecordingWithBall('compare');
+    }
+    
+    function resetReference() {
+        if (confirm("Сбросить сохранённый эталон?")) {
+            localStorage.removeItem('engine_reference_scan');
+            localStorage.removeItem('reference_date');
+            document.getElementById('resetRefBtn').style.display = 'none';
+            document.getElementById('resultBlock').style.display = 'none';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            updateDates();
+            playSound('soundReset');
+            alert("Эталон удалён");
+        }
+    }
+    
+    // ========== ИСТОРИЯ ==========
+    let history = JSON.parse(localStorage.getItem('auto_history') || '[]');
+    function saveToHistory(title, result) {
+        history.unshift({ id: Date.now(), title: title, result: result, date: new Date().toLocaleString('ru-RU') });
+        history = history.slice(0, 30);
+        localStorage.setItem('auto_history', JSON.stringify(history));
+        renderHistory();
+    }
+    function renderHistory() {
+        const container = document.getElementById('historyList');
+        if (!container) return;
+        if (history.length === 0) { container.innerHTML = '<div style="text-align:center;padding:40px;color:#9ab3c5;">НЕТ ПРОВЕРОК</div>'; return; }
+        container.innerHTML = history.map(item => `<div style="background:rgba(25,35,45,0.85);padding:12px;border-radius:16px;"><div style="font-size:11px;color:#6ba5d9;">${item.title}</div><div style="font-size:11px;color:white;margin-top:4px;">${item.result}</div><div style="font-size:9px;color:#9ab3c5;margin-top:6px;">${item.date}</div></div>`).join('');
+    }
+    function clearHistory() {
+        if (confirm('ОЧИСТИТЬ ИСТОРИЮ?')) { history = []; localStorage.setItem('auto_history', '[]'); renderHistory(); }
+    }
+    
+    // ========== НАВИГАЦИЯ ==========
+    function showScreen(screen) {
+        document.querySelectorAll('.section-screen').forEach(el => el.classList.remove('active'));
+        document.getElementById('menuScreen').style.display = 'none';
+        if (screen === 'main') { document.getElementById('menuScreen').style.display = 'block'; return; }
+        const target = document.getElementById(screen + 'Screen');
+        if (target) target.classList.add('active');
+        if (screen === 'history') renderHistory();
+        if (screen === 'diagnostic') {
+            setTimeout(() => {
+                resizeCanvas();
+                const ref = localStorage.getItem('engine_reference_scan');
+                const last = localStorage.getItem('engine_last_scan');
+                updateDates();
+                if (ref && last) {
+                    drawComparison(JSON.parse(ref), JSON.parse(last));
+                } else if (ref) {
+                    const r = JSON.parse(ref);
+                    drawComparison(r, r);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = "#aaa";
+                    ctx.fillText("Сохраните эталон", 20, 40);
+                }
+            }, 100);
+        }
+    }
+    
+    function showModal(icon, title, desc) {
+        document.getElementById('modalIcon').textContent = icon;
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalDesc').textContent = desc;
+        document.getElementById('resultModal').classList.remove('hidden');
+    }
+    function closeModal() { document.getElementById('resultModal').classList.add('hidden'); }
+    
+    // ========== ИНИЦИАЛИЗАЦИЯ ==========
+    window.addEventListener('DOMContentLoaded', () => {
+        renderHistory();
+        resizeCanvas();
+        updateDates();
+        const ref = localStorage.getItem('engine_reference_scan');
+        if (ref) {
+            document.getElementById('resetRefBtn').style.display = 'block';
+            const r = JSON.parse(ref);
+            drawComparison(r, r);
+        }
+    });
+    
+    // Инициализация AudioContext при первом касании
+    document.addEventListener('touchstart', initAudioContext, {once: true});
+    document.addEventListener('click', initAudioContext, {once: true});
+</script>
+</body>
+</html>
