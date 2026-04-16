@@ -4,7 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0a0a0a">
-    <title>Анти ИИ Автомобиль | Диагностика двигателя</title>
+    
+    <title>Анти ИИ Автомобиль | Диагностика двигателя по вибрации</title>
+    <meta name="description" content="Анти ИИ Автомобиль — бесплатная офлайн-диагностика двигателя по вибрации. Сохраните эталон, сравнивайте вибрации, получайте результат: работает так же, хуже или значительно хуже.">
+    <meta name="keywords" content="диагностика двигателя, вибрация, проверка авто, анти ии автомобиль, акселерометр, сравнение вибраций">
+    <meta name="author" content="Анти ИИ">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@AntiAI_Auto">
+    <meta name="twitter:title" content="Анти ИИ Автомобиль | Диагностика двигателя">
+    <meta name="twitter:description" content="Бесплатная офлайн-диагностика двигателя по вибрации. Сохраните эталон, сравнивайте вибрации, получайте результат.">
+    <meta name="twitter:image" content="https://anti-ai-auto.vercel.app/logo.jpeg">
+    
+    <!-- Open Graph (для соцсетей) -->
+    <meta property="og:url" content="https://anti-ai-auto.vercel.app/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Анти ИИ Автомобиль">
+    <meta property="og:title" content="Анти ИИ Автомобиль | Диагностика двигателя">
+    <meta property="og:description" content="Бесплатная офлайн-диагностика двигателя по вибрации. Просто. Точно. Бесплатно.">
+    <meta property="og:image" content="https://anti-ai-auto.vercel.app/logo.jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    
+    <!-- Schema.org для Алисы и поисковиков -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Анти ИИ Автомобиль",
+      "alternateName": "Диагностика двигателя по вибрации",
+      "description": "Бесплатная офлайн-диагностика двигателя по вибрации. Сохраните эталон исправного двигателя, сравнивайте вибрации сегодня с эталоном. Результат: работает так же, хуже или значительно хуже. График, голос, история проверок.",
+      "url": "https://anti-ai-auto.vercel.app/",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": "Android, iOS",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "RUB"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "Анти ИИ",
+        "url": "https://anti-ai-auto.vercel.app/"
+      },
+      "image": "https://anti-ai-auto.vercel.app/logo.jpeg",
+      "telephone": "8-920-227-56-76"
+    }
+    </script>
+    
+    <link rel="icon" type="image/jpeg" href="logo.jpeg">
+    <link rel="apple-touch-icon" href="logo.jpeg">
+    <link rel="canonical" href="https://anti-ai-auto.vercel.app/">
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -24,39 +77,18 @@
         
         .loading-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #0f1a24;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 200;
+            background: #0f1a24; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 200;
             transition: opacity 0.5s ease;
         }
-        .loading-screen.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-        .loading-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        .loading-screen.hidden { opacity: 0; pointer-events: none; }
+        .loading-video { width: 100%; height: 100%; object-fit: cover; }
         .sound-toggle {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0,0,0,0.5);
-            border: 2px solid rgba(255,255,255,0.5);
-            border-radius: 50%;
-            width: 56px;
-            height: 56px;
-            font-size: 28px;
-            cursor: pointer;
-            z-index: 201;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
+            position: absolute; top: 20px; left: 20px;
+            background: rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 50%; width: 56px; height: 56px; font-size: 28px;
+            cursor: pointer; z-index: 201; display: flex; align-items: center;
+            justify-content: center; color: white;
         }
         .sound-toggle:active { transform: scale(0.9); }
         
@@ -275,7 +307,7 @@
 </head>
 <body>
 <div class="app">
-    <!-- ЗАСТАВКА: 2 секунды видео + 3 секунды задержка = 5 секунд -->
+    <!-- ЗАСТАВКА: 5 секунд -->
     <div class="loading-screen" id="loadingScreen">
         <button class="sound-toggle" id="soundBtn">🔇</button>
         <video src="cube.mp4" muted playsinline preload="auto" class="loading-video" id="loadingVideo"></video>
@@ -448,7 +480,7 @@
     // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
     let audioContext = null;
     
-    // ========== ЗАСТАВКА: 2 секунды видео + 3 секунды = 5 секунд ==========
+    // ========== ЗАСТАВКА: 5 секунд ==========
     const loadingScreen = document.getElementById('loadingScreen');
     const loadingVideo = document.getElementById('loadingVideo');
     const soundBtn = document.getElementById('soundBtn');
@@ -459,57 +491,36 @@
         if (loadingCompleted) return;
         loadingCompleted = true;
         
-        // Скрываем загрузочный экран
         loadingScreen.classList.add('hidden');
         setTimeout(() => {
             loadingScreen.style.display = 'none';
             appContent.style.display = 'block';
             loadingVideo.pause();
-            
-            // Автоматически проверяем датчик
             setTimeout(() => {
                 checkSensorFromMenu();
             }, 100);
         }, 500);
     }
     
-    // Запуск заставки
     function startLoadingSequence(useSound) {
         if (loadingCompleted) return;
-        
-        // Убираем кнопку звука
         soundBtn.style.display = 'none';
-        
-        // Настройка видео (без loop)
         loadingVideo.muted = !useSound;
         loadingVideo.currentTime = 0;
         loadingVideo.play().catch(e => console.log('Video error:', e));
-        
-        // Через 5 секунд (2 сек видео + 3 сек) завершаем заставку
         setTimeout(() => {
             finishLoadingAndShowResult();
         }, 5000);
     }
     
-    // Обработчик кнопки звука
-    soundBtn.addEventListener('click', (e) => { 
-        e.stopPropagation(); 
-        startLoadingSequence(true); 
-    });
+    soundBtn.addEventListener('click', (e) => { e.stopPropagation(); startLoadingSequence(true); });
+    setTimeout(() => { if (!loadingCompleted) startLoadingSequence(false); }, 500);
     
-    // Автоматический старт через 0.5 сек
-    setTimeout(() => { 
-        if (!loadingCompleted) startLoadingSequence(false); 
-    }, 500);
-    
-    // Инициализация AudioContext
     function initAudioContext() {
         if (!audioContext) {
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            } catch(e) {
-                console.log('AudioContext not supported');
-            }
+            } catch(e) { console.log('AudioContext not supported'); }
         }
     }
     
@@ -522,17 +533,14 @@
         if (audio) {
             audio.currentTime = 0;
             audio.onended = onEnd || null;
-            audio.play()
-                .catch(e => {
-                    console.error('❌ Audio error:', e.name, e.message);
-                    if (e.name === 'NotAllowedError' || e.name === 'NotFoundError' || e.name === 'NotSupportedError') {
-                        console.log('🔄 Используем fallback-звук');
-                        playFallbackBeep();
-                        if(onEnd) onEnd();
-                    }
-                });
+            audio.play().catch(e => {
+                console.error('❌ Audio error:', e.name, e.message);
+                if (e.name === 'NotAllowedError' || e.name === 'NotFoundError' || e.name === 'NotSupportedError') {
+                    playFallbackBeep();
+                    if(onEnd) onEnd();
+                }
+            });
         } else {
-            console.warn('⚠️ Audio element not found:', soundId);
             playFallbackBeep();
             if(onEnd) onEnd();
         }
@@ -543,7 +551,6 @@
         try {
             initAudioContext();
             if (!audioContext) return;
-            
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
             oscillator.connect(gainNode);
@@ -554,9 +561,7 @@
             gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
             oscillator.start();
             oscillator.stop(audioContext.currentTime + duration);
-        } catch(e) {
-            console.log('Fallback beep failed:', e);
-        }
+        } catch(e) {}
     }
     
     function toggleSound() {
@@ -643,11 +648,9 @@
             const working = hasData && avg > 0.01;
             updateSensorUI(working, testData);
             if (working) {
-                // ДАТЧИК РАБОТАЕТ
                 showModal('✅', 'ДАТЧИК РАБОТАЕТ', 'Акселерометр активен. Можно выполнять диагностику.');
                 playSound('soundSensorOk');
             } else {
-                // ДАТЧИК НЕ РАБОТАЕТ
                 showModal('❌', 'ДАТЧИК НЕ ОБНАРУЖЕН', 'Пожалуйста, проверьте настройки браузера и разрешите доступ к датчикам движения.');
                 playSound('soundSensorError');
             }
@@ -930,7 +933,6 @@
         }
     });
     
-    // Инициализация AudioContext при первом касании
     document.addEventListener('touchstart', initAudioContext, {once: true});
     document.addEventListener('click', initAudioContext, {once: true});
 </script>
