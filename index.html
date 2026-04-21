@@ -952,7 +952,7 @@
     document.addEventListener('touchstart', initAudioContext, {once: true});
     document.addEventListener('click', initAudioContext, {once: true});
     
-    // ДОБАВЛЕНО: Привязка кнопок диагностики
+    // Привязка кнопок диагностики
     document.getElementById('saveRefBtn').onclick = saveAsReference;
     document.getElementById('compareBtn').onclick = startCompare;
 </script>
@@ -965,5 +965,57 @@
     <meta itemprop="uploadDate" content="2025-01-01">
     <meta itemprop="duration" content="PT5S">
 </div>
+
+<!-- ========== FIX: КНОПКА ЗВУКА ВИДНА 3 СЕКУНДЫ ========== -->
+<script>
+(function() {
+    // Ждём полной загрузки страницы
+    window.addEventListener('load', function() {
+        const soundBtn = document.getElementById('soundBtn');
+        if (!soundBtn) return;
+        
+        // Принудительно показываем кнопку
+        soundBtn.style.display = 'flex';
+        soundBtn.style.visibility = 'visible';
+        soundBtn.style.opacity = '1';
+        
+        // Сохраняем оригинальную функцию
+        const originalStartLoading = window.startLoadingSequence;
+        
+        // Переопределяем функцию, чтобы она не скрывала кнопку сразу
+        if (typeof originalStartLoading === 'function') {
+            window.startLoadingSequence = function(useSound) {
+                // Не скрываем кнопку
+                // Вызываем оригинал без скрытия
+                if (originalStartLoading) {
+                    // Временно убираем скрытие кнопки
+                    const tempHide = soundBtn.style.display;
+                    soundBtn.style.display = 'flex';
+                    originalStartLoading(useSound);
+                    // Через 3 секунды скроем кнопку
+                    setTimeout(function() {
+                        if (soundBtn) soundBtn.style.display = 'none';
+                    }, 3000);
+                }
+            };
+        }
+        
+        // Отменяем все таймеры которые скрывают кнопку
+        // и скрываем её ровно через 3 секунды
+        setTimeout(function() {
+            if (soundBtn && soundBtn.style.display !== 'none') {
+                soundBtn.style.display = 'none';
+            }
+        }, 3000);
+        
+        // Дополнительная защита: если кнопка всё ещё видна через 3.5 секунды - скрываем
+        setTimeout(function() {
+            if (soundBtn && soundBtn.style.display !== 'none') {
+                soundBtn.style.display = 'none';
+            }
+        }, 3500);
+    });
+})();
+</script>
 </body>
 </html>
