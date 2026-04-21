@@ -296,7 +296,7 @@
     </video>
 </div>
 <div class="app">
-    <!-- ЗАСТАВКА: 2 секунды видео + 3 секунды задержка = 5 секунд -->
+    <!-- ЗАСТАВКА: 5 секунд, кнопка видна 3 секунды -->
     <div class="loading-screen" id="loadingScreen">
         <button class="sound-toggle" id="soundBtn">🔇</button>
         <video src="cube.mp4" muted playsinline preload="auto" class="loading-video" id="loadingVideo"></video>
@@ -469,12 +469,28 @@
     // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
     let audioContext = null;
     
-    // ========== ЗАСТАВКА: 2 секунды видео + 3 секунды = 5 секунд ==========
+    // ========== ЗАСТАВКА: 5 секунд, кнопка видна 3 секунды ==========
     const loadingScreen = document.getElementById('loadingScreen');
     const loadingVideo = document.getElementById('loadingVideo');
     const soundBtn = document.getElementById('soundBtn');
     const appContent = document.getElementById('appContent');
     let loadingCompleted = false;
+    let soundHidden = false;
+    
+    // Принудительно показываем кнопку при загрузке
+    if (soundBtn) {
+        soundBtn.style.display = 'flex';
+        soundBtn.style.visibility = 'visible';
+        soundBtn.style.opacity = '1';
+        
+        // Скрываем кнопку ровно через 3 секунды
+        setTimeout(function() {
+            if (soundBtn && !soundHidden) {
+                soundBtn.style.display = 'none';
+                soundHidden = true;
+            }
+        }, 3000);
+    }
     
     function finishLoadingAndShowResult() {
         if (loadingCompleted) return;
@@ -484,30 +500,34 @@
         setTimeout(() => {
             loadingScreen.style.display = 'none';
             appContent.style.display = 'block';
-            loadingVideo.pause();
+            if (loadingVideo) loadingVideo.pause();
             
             setTimeout(() => {
-                checkSensorFromMenu();
+                if (typeof checkSensorFromMenu === 'function') checkSensorFromMenu();
             }, 100);
         }, 500);
     }
     
     function startLoadingSequence(useSound) {
         if (loadingCompleted) return;
-        soundBtn.style.display = 'none';
-        loadingVideo.muted = !useSound;
-        loadingVideo.currentTime = 0;
-        loadingVideo.play().catch(e => console.log('Video error:', e));
+        // НЕ скрываем кнопку здесь - она скроется по таймеру через 3 секунды
+        if (loadingVideo) {
+            loadingVideo.muted = !useSound;
+            loadingVideo.currentTime = 0;
+            loadingVideo.play().catch(e => console.log('Video error:', e));
+        }
         
         setTimeout(() => {
             finishLoadingAndShowResult();
         }, 5000);
     }
     
-    soundBtn.addEventListener('click', (e) => { 
-        e.stopPropagation(); 
-        startLoadingSequence(true); 
-    });
+    if (soundBtn) {
+        soundBtn.addEventListener('click', (e) => { 
+            e.stopPropagation(); 
+            startLoadingSequence(true); 
+        });
+    }
     
     setTimeout(() => { 
         if (!loadingCompleted) startLoadingSequence(false); 
@@ -564,7 +584,8 @@
     
     function toggleSound() {
         soundEnabled = !soundEnabled;
-        document.getElementById('voiceBtn').textContent = soundEnabled ? '🔊' : '🔇';
+        const voiceBtn = document.getElementById('voiceBtn');
+        if (voiceBtn) voiceBtn.textContent = soundEnabled ? '🔊' : '🔇';
     }
     
     // ========== КОПИРОВАНИЕ ==========
@@ -579,7 +600,7 @@
     let isRecording = false;
     let currentMode = null;
     let canvas = document.getElementById('vibrationChart');
-    let ctx = canvas.getContext('2d');
+    let ctx = canvas ? canvas.getContext('2d') : null;
     let sensorWorking = false;
     let smoothValue = 0;
     
@@ -594,24 +615,21 @@
     
     function updateDates() {
         const refDate = localStorage.getItem('reference_date');
-        document.getElementById('referenceDate').innerHTML = refDate ? `Сохранено: ${refDate}` : 'Нет данных';
+        const refDateEl = document.getElementById('referenceDate');
+        if (refDateEl) refDateEl.innerHTML = refDate ? `Сохранено: ${refDate}` : 'Нет данных';
     }
     
     function setButtonsState(enabled) {
         const saveBtn = document.getElementById('saveRefBtn');
         const compareBtn = document.getElementById('compareBtn');
-        if (enabled) {
-            saveBtn.disabled = false;
-            compareBtn.disabled = false;
-        } else {
-            saveBtn.disabled = true;
-            compareBtn.disabled = true;
-        }
+        if (saveBtn) saveBtn.disabled = !enabled;
+        if (compareBtn) compareBtn.disabled = !enabled;
     }
     
     function updateSensorUI(working, data) {
         sensorWorking = working;
         const sensorDivDiag = document.getElementById('sensorStatusDiag');
+        if (!sensorDivDiag) return;
         if (working && data && data.length > 10) {
             const avg = data.reduce((a,b)=>a+b,0)/data.length;
             const max = Math.max(...data);
@@ -636,7 +654,7 @@
     
     function checkSensorFromMenu() {
         const sensorDiv = document.getElementById('sensorStatusDiag');
-        sensorDiv.innerHTML = `<h4>🔍 ПРОВЕРКА ДАТЧИКА...</h4><p>Собираем данные 2 секунды</p>`;
+        if (sensorDiv) sensorDiv.innerHTML = `<h4>🔍 ПРОВЕРКА ДАТЧИКА...</h4><p>Собираем данные 2 секунды</p>`;
         let testData = [];
         function testMotion(e) { let z = e.acceleration.z; if (z === undefined || z === null) z = 0; testData.push(Math.abs(z)); }
         window.addEventListener('devicemotion', testMotion);
@@ -742,6 +760,7 @@
     
     function showResult(percent) {
         const resultBlock = document.getElementById('resultBlock');
+        if (!resultBlock) return;
         let html = '';
         if (percent <= 10) {
             html = `<div class="result-big good"><div class="result-percent">✅ ${percent}%</div><div class="result-text">ДВИГАТЕЛЬ РАБОТАЕТ ТАК ЖЕ</div><div class="result-compare">Отклонений не обнаружено</div></div>`;
@@ -766,16 +785,16 @@
         const timerEl = document.getElementById('bigTimer');
         const instructionEl = document.getElementById('diagnosticInstruction');
         
-        instructionEl.innerHTML = '🚗 Двигатель работает...<br>Не трогайте телефон';
-        fullscreen.classList.remove('hidden');
-        ball.className = 'big-ball red';
-        timerEl.textContent = '30';
+        if (instructionEl) instructionEl.innerHTML = '🚗 Двигатель работает...<br>Не трогайте телефон';
+        if (fullscreen) fullscreen.classList.remove('hidden');
+        if (ball) ball.className = 'big-ball red';
+        if (timerEl) timerEl.textContent = '30';
         
         playSound('soundReady', function() {
             let timeLeft = 30;
             let timer = setInterval(() => {
                 timeLeft--;
-                timerEl.textContent = timeLeft;
+                if (timerEl) timerEl.textContent = timeLeft;
                 if (timeLeft <= 0) {
                     clearInterval(timer);
                     startRecordingPhase();
@@ -789,9 +808,9 @@
         const timerEl = document.getElementById('bigTimer');
         const instructionEl = document.getElementById('diagnosticInstruction');
         
-        instructionEl.innerHTML = '📊 Запись вибраций...<br>Не трогайте телефон';
-        ball.className = 'big-ball green';
-        timerEl.textContent = '30';
+        if (instructionEl) instructionEl.innerHTML = '📊 Запись вибраций...<br>Не трогайте телефон';
+        if (ball) ball.className = 'big-ball green';
+        if (timerEl) timerEl.textContent = '30';
         
         playSound('soundRecordingStart', function() {
             measurementData = [];
@@ -808,20 +827,22 @@
             let timeLeft = 30;
             let timer = setInterval(() => {
                 timeLeft--;
-                timerEl.textContent = timeLeft;
+                if (timerEl) timerEl.textContent = timeLeft;
                 if (timeLeft <= 0) {
                     clearInterval(timer);
                     clearInterval(mockInterval);
                     isRecording = false;
                     playSound('soundRecordingEnd', function() {
-                        document.getElementById('diagnosticFullscreen').classList.add('hidden');
+                        const fullscreen = document.getElementById('diagnosticFullscreen');
+                        if (fullscreen) fullscreen.classList.add('hidden');
                         const profile = createProfile(measurementData);
                         const now = new Date().toLocaleString('ru-RU');
                         
                         if (currentMode === 'save') {
                             localStorage.setItem('engine_reference_scan', JSON.stringify(profile));
                             localStorage.setItem('reference_date', now);
-                            document.getElementById('resetRefBtn').style.display = 'block';
+                            const resetBtn = document.getElementById('resetRefBtn');
+                            if (resetBtn) resetBtn.style.display = 'block';
                             updateDates();
                             showModal('✅', 'ЭТАЛОН СОХРАНЁН', 'Данные сохранены. Теперь можно сравнивать');
                             playSound('soundSaveSuccess');
@@ -865,9 +886,11 @@
         if (confirm("Сбросить сохранённый эталон?")) {
             localStorage.removeItem('engine_reference_scan');
             localStorage.removeItem('reference_date');
-            document.getElementById('resetRefBtn').style.display = 'none';
-            document.getElementById('resultBlock').style.display = 'none';
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const resetBtn = document.getElementById('resetRefBtn');
+            if (resetBtn) resetBtn.style.display = 'none';
+            const resultBlock = document.getElementById('resultBlock');
+            if (resultBlock) resultBlock.style.display = 'none';
+            if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
             updateDates();
             playSound('soundReset');
             alert("Эталон удалён");
@@ -895,8 +918,12 @@
     // ========== НАВИГАЦИЯ ==========
     function showScreen(screen) {
         document.querySelectorAll('.section-screen').forEach(el => el.classList.remove('active'));
-        document.getElementById('menuScreen').style.display = 'none';
-        if (screen === 'main') { document.getElementById('menuScreen').style.display = 'block'; return; }
+        const menuScreen = document.getElementById('menuScreen');
+        if (menuScreen) menuScreen.style.display = 'none';
+        if (screen === 'main') { 
+            if (menuScreen) menuScreen.style.display = 'block';
+            return; 
+        }
         const target = document.getElementById(screen + 'Screen');
         if (target) target.classList.add('active');
         if (screen === 'history') renderHistory();
@@ -911,7 +938,7 @@
                 } else if (ref) {
                     const r = JSON.parse(ref);
                     drawComparison(r, r);
-                } else {
+                } else if (ctx) {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     ctx.fillStyle = "#aaa";
                     ctx.fillText("Сохраните эталон", 20, 40);
@@ -921,12 +948,19 @@
     }
     
     function showModal(icon, title, desc) {
-        document.getElementById('modalIcon').textContent = icon;
-        document.getElementById('modalTitle').textContent = title;
-        document.getElementById('modalDesc').textContent = desc;
-        document.getElementById('resultModal').classList.remove('hidden');
+        const modalIcon = document.getElementById('modalIcon');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalDesc = document.getElementById('modalDesc');
+        const resultModal = document.getElementById('resultModal');
+        if (modalIcon) modalIcon.textContent = icon;
+        if (modalTitle) modalTitle.textContent = title;
+        if (modalDesc) modalDesc.textContent = desc;
+        if (resultModal) resultModal.classList.remove('hidden');
     }
-    function closeModal() { document.getElementById('resultModal').classList.add('hidden'); }
+    function closeModal() { 
+        const resultModal = document.getElementById('resultModal');
+        if (resultModal) resultModal.classList.add('hidden'); 
+    }
     
     // ========== PWA: РЕГИСТРАЦИЯ SERVICE WORKER ==========
     if ('serviceWorker' in navigator) {
@@ -943,7 +977,8 @@
         updateDates();
         const ref = localStorage.getItem('engine_reference_scan');
         if (ref) {
-            document.getElementById('resetRefBtn').style.display = 'block';
+            const resetBtn = document.getElementById('resetRefBtn');
+            if (resetBtn) resetBtn.style.display = 'block';
             const r = JSON.parse(ref);
             drawComparison(r, r);
         }
@@ -953,8 +988,10 @@
     document.addEventListener('click', initAudioContext, {once: true});
     
     // Привязка кнопок диагностики
-    document.getElementById('saveRefBtn').onclick = saveAsReference;
-    document.getElementById('compareBtn').onclick = startCompare;
+    const saveRefBtn = document.getElementById('saveRefBtn');
+    const compareBtn = document.getElementById('compareBtn');
+    if (saveRefBtn) saveRefBtn.onclick = saveAsReference;
+    if (compareBtn) compareBtn.onclick = startCompare;
 </script>
 <!-- ДОБАВЛЕНО: Дополнительная разметка для Google Video индексации -->
 <div itemscope itemtype="https://schema.org/VideoObject" style="display:none;">
@@ -965,57 +1002,5 @@
     <meta itemprop="uploadDate" content="2025-01-01">
     <meta itemprop="duration" content="PT5S">
 </div>
-
-<!-- ========== FIX: КНОПКА ЗВУКА ВИДНА 3 СЕКУНДЫ ========== -->
-<script>
-(function() {
-    // Ждём полной загрузки страницы
-    window.addEventListener('load', function() {
-        const soundBtn = document.getElementById('soundBtn');
-        if (!soundBtn) return;
-        
-        // Принудительно показываем кнопку
-        soundBtn.style.display = 'flex';
-        soundBtn.style.visibility = 'visible';
-        soundBtn.style.opacity = '1';
-        
-        // Сохраняем оригинальную функцию
-        const originalStartLoading = window.startLoadingSequence;
-        
-        // Переопределяем функцию, чтобы она не скрывала кнопку сразу
-        if (typeof originalStartLoading === 'function') {
-            window.startLoadingSequence = function(useSound) {
-                // Не скрываем кнопку
-                // Вызываем оригинал без скрытия
-                if (originalStartLoading) {
-                    // Временно убираем скрытие кнопки
-                    const tempHide = soundBtn.style.display;
-                    soundBtn.style.display = 'flex';
-                    originalStartLoading(useSound);
-                    // Через 3 секунды скроем кнопку
-                    setTimeout(function() {
-                        if (soundBtn) soundBtn.style.display = 'none';
-                    }, 3000);
-                }
-            };
-        }
-        
-        // Отменяем все таймеры которые скрывают кнопку
-        // и скрываем её ровно через 3 секунды
-        setTimeout(function() {
-            if (soundBtn && soundBtn.style.display !== 'none') {
-                soundBtn.style.display = 'none';
-            }
-        }, 3000);
-        
-        // Дополнительная защита: если кнопка всё ещё видна через 3.5 секунды - скрываем
-        setTimeout(function() {
-            if (soundBtn && soundBtn.style.display !== 'none') {
-                soundBtn.style.display = 'none';
-            }
-        }, 3500);
-    });
-})();
-</script>
 </body>
 </html>
