@@ -6,27 +6,20 @@
     <meta name="theme-color" content="#121212">
     <link rel="manifest" href="manifest.json">
     <title>Анти ИИ Автомобиль | Диагностика двигателя</title>
-    
-    <!-- СТРУКТУРИРОВАННЫЕ ДАННЫЕ ДЛЯ ВИДЕО (для Google) -->
+    <!-- ДОБАВЛЕНО: Структурированные данные для видео -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "VideoObject",
-      "name": "Анти ИИ Автомобиль — заставка приложения",
-      "description": "Анимация загрузки приложения для диагностики автомобиля по вибрации двигателя. Бесплатная диагностика через акселерометр телефона.",
+      "name": "Анти ИИ Автомобиль | Заставка",
+      "description": "Короткая анимация загрузки приложения для диагностики двигателя автомобиля по вибрации",
       "thumbnailUrl": "https://anti-ai-auto.vercel.app/thumbnail.jpg",
-      "uploadDate": "2025-01-01T00:00:00+03:00",
+      "uploadDate": "2025-01-01T08:00:00+08:00",
       "duration": "PT5S",
       "contentUrl": "https://anti-ai-auto.vercel.app/cube.mp4",
-      "embedUrl": "https://anti-ai-auto.vercel.app/cube.mp4",
-      "interactionStatistic": {
-        "@type": "InteractionCounter",
-        "interactionType": "https://schema.org/WatchAction",
-        "userInteractionCount": "1000"
-      }
+      "embedUrl": "https://anti-ai-auto.vercel.app/cube.mp4"
     }
     </script>
-    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -63,19 +56,6 @@
             height: 100%;
             object-fit: cover;
         }
-        
-        /* Скрытое видео ТОЛЬКО ДЛЯ ПОИСКОВЫХ РОБОТОВ (не видно пользователям) */
-        .seo-video-container {
-            position: absolute;
-            left: -9999px;
-            top: -9999px;
-            width: 1px;
-            height: 1px;
-            overflow: hidden;
-            opacity: 0;
-            pointer-events: none;
-        }
-        
         .sound-toggle {
             position: absolute;
             top: 20px;
@@ -309,15 +289,12 @@
     </style>
 </head>
 <body>
-
-<!-- СКРЫТОЕ ВИДЕО ДЛЯ ПОИСКОВЫХ РОБОТОВ (не видно пользователям) -->
-<div class="seo-video-container">
+<!-- ДОБАВЛЕНО: Скрытое видео для поисковых роботов Google -->
+<div style="position: absolute; left: -9999px; top: -9999px;">
     <video id="seoVideo" controls width="640" height="360" preload="metadata">
         <source src="cube.mp4" type="video/mp4">
-        Анимация загрузки приложения Анти ИИ Автомобиль
     </video>
 </div>
-
 <div class="app">
     <!-- ЗАСТАВКА: 2 секунды видео + 3 секунды задержка = 5 секунд -->
     <div class="loading-screen" id="loadingScreen">
@@ -970,14 +947,23 @@
             const r = JSON.parse(ref);
             drawComparison(r, r);
         }
-        
-        // Привязываем кнопки диагностики
-        document.getElementById('saveRefBtn').onclick = saveAsReference;
-        document.getElementById('compareBtn').onclick = startCompare;
     });
     
     document.addEventListener('touchstart', initAudioContext, {once: true});
     document.addEventListener('click', initAudioContext, {once: true});
+    
+    // ДОБАВЛЕНО: Привязка кнопок диагностики
+    document.getElementById('saveRefBtn').onclick = saveAsReference;
+    document.getElementById('compareBtn').onclick = startCompare;
 </script>
+<!-- ДОБАВЛЕНО: Дополнительная разметка для Google Video индексации -->
+<div itemscope itemtype="https://schema.org/VideoObject" style="display:none;">
+    <meta itemprop="name" content="Анти ИИ Автомобиль | Заставка">
+    <meta itemprop="description" content="Короткая анимация загрузки приложения для диагностики двигателя автомобиля по вибрации">
+    <meta itemprop="thumbnailUrl" content="https://anti-ai-auto.vercel.app/thumbnail.jpg">
+    <meta itemprop="contentUrl" content="https://anti-ai-auto.vercel.app/cube.mp4">
+    <meta itemprop="uploadDate" content="2025-01-01">
+    <meta itemprop="duration" content="PT5S">
+</div>
 </body>
 </html>
